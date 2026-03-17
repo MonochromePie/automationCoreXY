@@ -47,41 +47,47 @@ def map_range(value, in_min, in_max, out_min, out_max):
 
 
 def step_motor(dx, dy, speed_mm=DEFAULT_SPEED_MM, monitorLX=False, monitorLY=False):
-    # CoreXY kinematics
-    # dx, dy in mm
-    # speed_mm: desired speed in mm/sec
-    # Invert X direction
-    #dx = -dx
-    pulses_x = int(abs(dx) / MM_PER_PULSE)
-    pulses_y = int(abs(dy) / MM_PER_PULSE)
-    # CoreXY equations
-    pulses_A = abs(pulses_x - pulses_y)
-    pulses_B = abs(pulses_x + pulses_y)
-    dir_A = 1-M0Inv if (dx - dy) >= 0 else M0Inv
-    dir_B = 1-M1Inv if (dx + dy) >= 0 else M1Inv
-    # Convert speed_mm to pulses/sec
+    # CoreXY kinematics: compute belt movements from signed dx, dy
+    dA = dx - dy
+    dB = dx + dy
+
+    pulses_A = int(abs(dA) / MM_PER_PULSE)
+    pulses_B = int(abs(dB) / MM_PER_PULSE)
+
+    dir_A = 1 - M0Inv if dA >= 0 else M0Inv
+    dir_B = 1 - M1Inv if dB >= 0 else M1Inv
+
     speed_pulses = speed_mm / MM_PER_PULSE
     delay = int(1_000_000 / speed_pulses / 2)
-    # Set directions
+
     DIR0.value(dir_A)
     DIR1.value(dir_B)
-    # Step A and B motors
-    
+
     max_step = max(pulses_A, pulses_B)
+    if max_step == 0:
+        return
+
+    # Bresenham-style interpolation to evenly distribute steps
+    err_a = 0
+    err_b = 0
     for i in range(max_step):
-        # Check limit switches if monitoring
-        pulse_A = map_range(i, 0, max_step, 0, pulses_A) if pulses_A > 0 else 0
-        pulse_B = map_range(i, 0, max_step, 0, pulses_B) if pulses_B > 0 else 0
         if monitorLX and LX.value() == 1:
             print("Limit X triggered, aborting move.")
             return
         if monitorLY and LY.value() == 1:
             print("Limit Y triggered, aborting move.")
             return
-        if i < pulses_A:
+
+        err_a += pulses_A
+        err_b += pulses_B
+
+        if err_a >= max_step:
+            err_a -= max_step
             STEP0.value(1)
-        if i < pulses_B:
+        if err_b >= max_step:
+            err_b -= max_step
             STEP1.value(1)
+
         time.sleep_us(delay)
         STEP0.value(0)
         STEP1.value(0)
