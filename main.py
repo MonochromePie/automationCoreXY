@@ -12,12 +12,15 @@ try:
     enable_all(False)
     print("READY")
     home_axes()
+    # move_absolute(-40, -80)
+    # while True:
+    #     pass
     # go_center_from_home()>
     time.sleep(1)
     centerX = -100
     centerY = -100
     # move to center
-    circle_radius = 1
+    circle_radius = 50
     move_absolute(centerX, centerY)
     move_absolute(centerX + circle_radius, centerY)
     # time.sleep(1)
@@ -48,11 +51,11 @@ try:
 
 
         time_startLoop = float(time_diff)
-        x_diff = circle_radius * math.cos(time_diff / 1000) # Convert ms to seconds for smoother movement
+        x_diff = circle_radius * math.cos(-1 * time_diff / 1000) # Convert ms to seconds for smoother movement
         y_diff = circle_radius * math.sin(time_diff/ 1000)
-        step_motor(x_diff, y_diff)
+        # step_motor(x_diff, y_diff)
         print(f"X_diff: {x_diff:.2f} Y_diff: {y_diff:.2f}")
-        # move_absolute(centerX - x_diff, centerY - y_diff)
+        move_absolute(centerX - x_diff, centerY - y_diff)
 
 
 

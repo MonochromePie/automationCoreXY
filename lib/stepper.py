@@ -41,6 +41,11 @@ HOMING_SPEED_MM = 100  # mm/sec
 
 M0Inv = 1
 M1Inv = 1
+
+def map_range(value, in_min, in_max, out_min, out_max):
+    return (value - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
+
+
 def step_motor(dx, dy, speed_mm=DEFAULT_SPEED_MM, monitorLX=False, monitorLY=False):
     # CoreXY kinematics
     # dx, dy in mm
@@ -61,8 +66,12 @@ def step_motor(dx, dy, speed_mm=DEFAULT_SPEED_MM, monitorLX=False, monitorLY=Fal
     DIR0.value(dir_A)
     DIR1.value(dir_B)
     # Step A and B motors
-    for i in range(max(pulses_A, pulses_B)):
+    
+    max_step = max(pulses_A, pulses_B)
+    for i in range(max_step):
         # Check limit switches if monitoring
+        pulse_A = map_range(i, 0, max_step, 0, pulses_A) if pulses_A > 0 else 0
+        pulse_B = map_range(i, 0, max_step, 0, pulses_B) if pulses_B > 0 else 0
         if monitorLX and LX.value() == 1:
             print("Limit X triggered, aborting move.")
             return
